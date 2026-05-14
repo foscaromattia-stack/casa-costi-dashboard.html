@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Casa Costi Dashboard</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=cabinet-grotesk@500,700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root,[data-theme="light"]{
+--tx:clamp(.75rem,.7rem + .25vw,.875rem);--ts:clamp(.875rem,.8rem + .35vw,1rem);
+--tb:clamp(1rem,.95rem + .25vw,1.125rem);--tl:clamp(1.125rem,1rem + .75vw,1.5rem);
+--txl:clamp(1.5rem,1.2rem + 1.25vw,2.25rem);
+--s1:.25rem;--s2:.5rem;--s3:.75rem;--s4:1rem;--s5:1.25rem;--s6:1.5rem;--s8:2rem;--s10:2.5rem;--s12:3rem;--s16:4rem;
+--rsm:.375rem;--rmd:.5rem;--rlg:.75rem;--rxl:1rem;--rfl:9999px;
+--bg:#f7f6f2;--sf:#f9f8f5;--sf2:#fbfbf9;--sfo:#f3f0ec;--sfd:#e6e4df;
+--div:#dcd9d5;--brd:#d4d1ca;--tx1:#28251d;--txm:#6f6b63;--txf:#a9a59d;--txi:#f9f8f4;
+--pr:#01696f;--prh:#0c4e54;--prhl:#cedcd8;--su:#437a22;--er:#a12c7b;--wa:#964219;--bl:#006494;
+--shsm:0 1px 2px rgba(40,37,29,.06);--shmd:0 8px 24px rgba(40,37,29,.08);--shlg:0 18px 40px rgba(40,37,29,.12);
+--fb:'Satoshi','Inter',sans-serif;--fd:'Cabinet Grotesk','Inter',sans-serif;
+}
+[data-theme="dark"]{
+--bg:#171614;--sf:#1c1b19;--sf2:#201f1d;--sfo:#1d1c1a;--sfd:#2d2c2a;
+--div:#262523;--brd:#393836;--tx1:#cdccca;--txm:#9a9895;--txf:#6d6a67;--txi:#2b2a28;
+--pr:#4f98a3;--prh:#227f8b;--su:#6daa45;--er:#d163a7;--wa:#bb653b;--bl:#5591c7;
+--shsm:0 1px 2px rgba(0,0,0,.2);--shmd:0 8px 24px rgba(0,0,0,.3);--shlg:0 18px 40px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;scroll-behavior:smooth}
+body{min-height:100vh;background:radial-gradient(circle at top right,color-mix(in srgb,var(--pr) 8%,transparent),transparent 28%),var(--bg);color:var(--tx1);font-family:var(--fb);font-size:var(--tb);line-height:1.6}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none;transition:background 180ms,color 180ms,transform 180ms,box-shadow 180ms}
+input,select{width:100%;border:1px solid color-mix(in srgb,var(--tx1) 12%,transparent);background:var(--sf2);color:var(--tx1);border-radius:var(--rmd);padding:.875rem .95rem;min-height:44px}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--pr);outline-offset:3px}
+canvas{width:100%!important;height:300px!important}
+
+/* LAYOUT */
+.shell{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;padding:var(--s6);background:color-mix(in srgb,var(--sf) 88%,transparent);backdrop-filter:blur(12px);border-right:1px solid color-mix(in srgb,var(--tx1) 10%,transparent);display:flex;flex-direction:column;gap:var(--s8);overflow-y:auto}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:var(--s4);padding:var(--s5) clamp(var(--s4),2vw,var(--s8));background:color-mix(in srgb,var(--bg) 84%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid color-mix(in srgb,var(--tx1) 9%,transparent);flex-wrap:wrap}
+.content{padding:clamp(var(--s4),2vw,var(--s8));display:grid;gap:var(--s6);align-content:start}
+
+/* BRAND */
+.brand{display:flex;align-items:center;gap:var(--s3)}
+.brand-mark{width:44px;height:44px;border-radius:14px;background:linear-gradient(160deg,var(--pr),color-mix(in srgb,var(--pr) 58%,var(--bl)));display:grid;place-items:center;color:var(--txi);box-shadow:var(--shmd);flex-shrink:0}
+.brand h1{font-family:var(--fd);font-size:var(--tl);line-height:1.1;letter-spacing:-.02em}
+.brand p{font-size:var(--tx);color:var(--txm);max-width:20ch;margin-top:.2rem}
+
+/* NAV */
+.nav-group{display:grid;gap:var(--s2)}
+.nav-label{font-size:var(--tx);text-transform:uppercase;letter-spacing:.12em;color:var(--txf);padding-inline:var(--s2)}
+.nav-link{display:flex;align-items:center;gap:var(--s3);min-height:44px;padding:.8rem .95rem;border-radius:var(--rlg);color:var(--txm);text-decoration:none;font-size:var(--ts)}
+.nav-link:hover,.nav-link.active{background:color-mix(in srgb,var(--pr) 10%,var(--sf));color:var(--tx1)}
+.dot{width:9px;height:9px;border-radius:var(--rfl);flex-shrink:0}
+
+/* SIDEBAR SUMMARY */
+.sb-summary{margin-top:auto;padding:var(--s5);background:var(--sfo);border:1px solid color-mix(in srgb,var(--tx1) 9%,transparent);border-radius:var(--rxl);box-shadow:var(--shsm)}
+.sb-summary h2{font-size:var(--ts);margin-bottom:var(--s2)}
+.sb-summary p{color:var(--txm);font-size:var(--tx);margin-bottom:var(--s3)}
+.sb-summary strong{display:block;font-size:var(--tl);font-variant-numeric:tabular-nums lining-nums;font-family:var(--fd);letter-spacing:-.03em}
+
+/* TOPBAR BUTTONS */
+.btn-primary{background:var(--pr);color:var(--txi);box-shadow:var(--shsm);min-height:44px;border-radius:var(--rfl);padding:.8rem 1.1rem;font-size:var(--ts);display:inline-flex;align-items:center;gap:.55rem;white-space:nowrap}
+.btn-primary:hover{background:var(--prh);transform:translateY(-1px)}
+.btn-ghost{border:1px solid color-mix(in srgb,var(--tx1) 11%,transparent);background:var(--sf);color:var(--txm);min-height:44px;border-radius:var(--rfl);padding:.8rem 1rem;font-size:var(--ts);display:inline-flex;align-items:center;gap:.55rem;white-space:nowrap}
+.btn-ghost:hover{background:var(--sfo)}
+.btns{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap}
+
+/* PANEL */
+.panel{background:color-mix(in srgb,var(--sf) 88%,transparent);border:1px solid color-mix(in srgb,var(--tx1) 10%,transparent);border-radius:var(--rxl);box-shadow:var(--shsm);overflow:hidden}
+.panel-inner{padding:clamp(var(--s5),2vw,var(--s8))}
+
+/* HERO GRID */
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(310px,.9fr);gap:var(--s6)}
+.hero-card{padding:clamp(var(--s5),2vw,var(--s8));display:grid;gap:var(--s6);background:radial-gradient(circle at top right,color-mix(in srgb,var(--pr) 13%,transparent),transparent 38%),var(--sf)}
+.eyebrow{display:inline-flex;align-items:center;gap:var(--s2);padding:.35rem .7rem;border-radius:var(--rfl);background:color-mix(in srgb,var(--pr) 10%,var(--sfo));color:var(--pr);font-size:var(--tx);text-transform:uppercase;letter-spacing:.11em;font-weight:700;width:fit-content}
+.hero-card h3{font-family:var(--fd);font-size:var(--txl);line-height:1.05;letter-spacing:-.03em;max-width:14ch}
+.hero-card p{max-width:54ch;color:var(--txm)}
+.hero-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s4)}
+.metric{padding:var(--s4);background:color-mix(in srgb,var(--sf2) 88%,transparent);border-radius:var(--rlg);border:1px solid color-mix(in srgb,var(--tx1) 8%,transparent)}
+.metric span{display:block;font-size:var(--tx);text-transform:uppercase;letter-spacing:.08em;color:var(--txf);margin-bottom:var(--s2)}
+.metric strong{display:block;font-family:var(--fd);font-size:var(--tl);font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.03em}
+.metric small{display:block;margin-top:var(--s2);color:var(--txm);font-size:var(--tx)}
+
+/* FORM */
+.form-grid{display:grid;gap:var(--s4);grid-template-columns:repeat(2,minmax(0,1fr))}
+.field{display:grid;gap:var(--s2)}
+.field.full{grid-column:1/-1}
+.field label{font-size:var(--tx);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txm)}
+.dropzone{display:grid;gap:var(--s2);justify-items:start;min-height:120px;border:1.5px dashed color-mix(in srgb,var(--pr) 30%,var(--brd));background:color-mix(in srgb,var(--pr) 5%,var(--sf2));border-radius:var(--rlg);padding:var(--s5);color:var(--txm)}
+.dropzone strong{color:var(--tx1);font-size:var(--ts)}
+.dropzone small{font-size:var(--tx)}
+.fileinput{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+#formFeedback{font-size:var(--ts);margin-top:var(--s2);min-height:1.5em}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s4)}
+.kpi-card{padding:var(--s5);background:var(--sf);border:1px solid color-mix(in srgb,var(--tx1) 9%,transparent);border-radius:var(--rxl);display:grid;gap:var(--s3);min-height:150px;align-content:start}
+.kpi-card header{display:flex;justify-content:space-between;align-items:center;gap:var(--s3)}
+.kpi-card h3{font-size:var(--ts);color:var(--txm);font-weight:500}
+.pill{display:inline-flex;align-items:center;padding:.25rem .5rem;border-radius:var(--rfl);font-size:var(--tx);background:color-mix(in srgb,var(--pr) 10%,var(--sfo));color:var(--pr)}
+.pill.green{background:color-mix(in srgb,var(--su) 10%,var(--sfo));color:var(--su)}
+.kpi-value{font-family:var(--fd);font-size:var(--txl);letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums lining-nums}
+.kpi-caption{color:var(--txm);font-size:var(--ts);max-width:26ch}
+
+/* NET FORMULA CARD */
+.formula-card{margin-top:var(--s4);padding:clamp(var(--s5),2vw,var(--s8));background:radial-gradient(circle at top right,color-mix(in srgb,var(--su) 12%,transparent),transparent 38%),var(--sf);border-radius:var(--rxl);border:1px solid color-mix(in srgb,var(--su) 22%,transparent);display:grid;gap:var(--s4)}
+.formula-card .eyebrow{background:color-mix(in srgb,var(--su) 10%,var(--sfo));color:var(--su)}
+.formula-value{font-family:var(--fd);font-size:var(--txl);letter-spacing:-.04em;font-variant-numeric:tabular-nums lining-nums}
+.formula-breakdown{font-size:var(--ts);color:var(--txm)}
+
+/* HIGHLIGHTS SECTION */
+.section-head{margin-bottom:var(--s4)}
+.section-head h3{font-size:var(--tl);line-height:1.15}
+.section-head p{font-size:var(--ts);color:var(--txm);margin-top:var(--s1)}
+
+/* CHART + SUMMARY GRID */
+.dash-grid{display:grid;grid-template-columns:1fr;gap:var(--s6);align-items:start}
+.summary-stack{display:grid;gap:var(--s3);margin-top:var(--s4)}
+.summary-item{padding:var(--s4);border-radius:var(--rlg);background:color-mix(in srgb,var(--sfo) 80%,transparent);border:1px solid color-mix(in srgb,var(--tx1) 8%,transparent);display:grid;gap:var(--s1)}
+.summary-item span{font-size:var(--tx);color:var(--txf);text-transform:uppercase;letter-spacing:.08em}
+.summary-item strong{font-family:var(--fd);font-size:var(--tl);font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.03em}
+.summary-item p{font-size:var(--ts);color:var(--txm)}
+
+/* TABLE */
+.table-scroll{overflow-x:auto;border-radius:var(--rlg);border:1px solid color-mix(in srgb,var(--tx1) 8%,transparent);margin-top:var(--s4)}
+table{width:100%;border-collapse:collapse;background:var(--sf2);font-size:var(--ts)}
+th,td{padding:.9rem 1rem;text-align:left;border-bottom:1px solid color-mix(in srgb,var(--tx1) 7%,transparent);font-variant-numeric:tabular-nums lining-nums}
+th{color:var(--txm);font-size:var(--tx);text-transform:uppercase;letter-spacing:.08em;background:color-mix(in srgb,var(--sfo) 88%,transparent)}
+tbody tr:hover{background:color-mix(in srgb,var(--pr) 5%,var(--sf2))}
+.badge{display:inline-flex;align-items:center;gap:var(--s2);padding:.3rem .65rem;border-radius:var(--rfl);background:var(--sfo);font-size:var(--tx);color:var(--txm)}
+.badge::before{content:'';width:8px;height:8px;border-radius:var(--rfl);background:var(--bc,var(--pr))}
+.del-btn{padding:.3rem .6rem;border-radius:var(--rsm);background:color-mix(in srgb,var(--er) 10%,transparent);color:var(--er);font-size:var(--tx);border:1px solid color-mix(in srgb,var(--er) 20%,transparent)}
+.del-btn:hover{background:color-mix(in srgb,var(--er) 18%,transparent)}
+
+/* FOOTER */
+.footer-note{color:var(--txm);font-size:var(--tx);text-align:right;margin-top:var(--s3)}
+
+/* EMPTY */
+.empty-state{display:grid;place-items:center;text-align:center;padding:var(--s12);min-height:200px;background:color-mix(in srgb,var(--sf2) 92%,transparent);border:1px dashed color-mix(in srgb,var(--tx1) 13%,transparent);border-radius:var(--rxl);color:var(--txm)}
+.empty-state h3{color:var(--tx1);font-size:var(--tl);margin-bottom:var(--s2)}
+.empty-state p{max-width:38ch;margin-bottom:var(--s4)}
+
+/* RESPONSIVE */
+.mob-toggle{display:none}
+@media(max-width:1100px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{position:fixed;inset:0 auto 0 0;width:min(300px,84vw);transform:translateX(-100%);transition:transform 200ms cubic-bezier(.16,1,.3,1);z-index:100}
+  .sidebar.open{transform:translateX(0)}
+  .mob-toggle{display:inline-flex}
+  .hero-grid,.dash-grid{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:720px){
+  .form-grid,.hero-metrics,.kpi-grid{grid-template-columns:1fr}
+  .topbar{flex-direction:column;align-items:flex-start}
+  .btns{width:100%}
+  .btns>*{flex:1 1 auto}
+  canvas{height:240px!important}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M3.75 10.4L12 3.75L20.25 10.4V19.25C20.25 19.664 19.914 20 19.5 20H14V13.5H10V20H4.5C4.086 20 3.75 19.664 3.75 19.25V10.4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Casa Costi</h1>
+        <p>Gestione costi, incassi GSE e report netti.</p>
+      </div>
+    </div>
+    <nav>
+      <div class="nav-group">
+        <span class="nav-label">Sezioni</span>
+        <a href="#overview" class="nav-link active"><span class="dot" style="background:var(--pr)"></span>Panoramica</a>
+        <a href="#form-section" class="nav-link"><span class="dot" style="background:var(--bl)"></span>Inserisci movimento</a>
+        <a href="#highlights" class="nav-link"><span class="dot" style="background:var(--su)"></span>Totale costi casa</a>
+        <a href="#report" class="nav-link"><span class="dot" style="background:var(--wa)"></span>Grafico mensile</a>
+        <a href="#storico" class="nav-link"><span class="dot" style="background:var(--txm)"></span>Storico</a>
+      </div>
+    </nav>
+    <div class="sb-summary">
+      <h2>Saldo netto anno corrente</h2>
+      <p>Costi − entrate GSE registrate.</p>
+      <strong id="sbYearNet">€ 0,00</strong>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="main-content">
+    <header class="topbar">
+      <div>
+        <div style="font-family:var(--fd);font-size:var(--txl);letter-spacing:-.03em;line-height:1.05">Dashboard costi casa</div>
+        <div style="color:var(--txm);font-size:var(--ts);margin-top:var(--s1)">Energia · Acqua · IMU · Entrate GSE</div>
+      </div>
+      <div class="btns">
+        <button class="btn-ghost mob-toggle" id="mobToggle">☰ Menu</button>
+        <button class="btn-ghost" id="btnTheme">◐ Tema</button>
+        <button class="btn-ghost" id="btnDemo">Dati demo</button>
+        <button class="btn-ghost" id="btnExport">Esporta CSV</button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- HERO + FORM -->
+      <div class="hero-grid">
+        <article class="panel hero-card" id="overview">
+          <div>
+            <span class="eyebrow">Monitoraggio abitazione</span>
+            <h3>Controlla il costo netto della tua casa.</h3>
+          </div>
+          <p>Inserisci bollette Energia, Acqua, IMU e incassi GSE. Il saldo netto si aggiorna in tempo reale.</p>
+          <div class="hero-metrics">
+            <div class="metric">
+              <span>Mese corrente</span>
+              <strong id="mCurrentTotal">€ 0,00</strong>
+              <small id="mCurrentLabel">Nessun dato</small>
+            </div>
+            <div class="metric">
+              <span>Categoria top</span>
+              <strong id="mTopCat">—</strong>
+              <small id="mTopCatVal">Aggiungi dati</small>
+            </div>
+            <div class="metric">
+              <span>Media mensile netta</span>
+              <strong id="mAvg">€ 0,00</strong>
+              <small>Calcolata sui mesi con dati</small>
+            </div>
+          </div>
+        </article>
+
+        <aside class="panel" id="form-section">
+          <div class="panel-inner">
+            <div class="section-head">
+              <h3>Inserisci un movimento</h3>
+              <p>Costo o incasso, con allegato opzionale.</p>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label for="fType">Categoria</label>
+                <select id="fType">
+                  <option value="">Seleziona</option>
+                  <option value="Energia">Energia</option>
+                  <option value="Acqua">Acqua</option>
+                  <option value="IMU">IMU</option>
+                  <option value="Entrate GSE">Entrate GSE</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="fMonth">Mese competenza</label>
+                <input id="fMonth" type="month"/>
+              </div>
+              <div class="field">
+                <label for="fAmount">Importo (€)</label>
+                <input id="fAmount" type="text" inputmode="decimal" placeholder="es. 124.50"/>
+              </div>
+              <div class="field">
+                <label for="fDate">Data pagamento</label>
+                <input id="fDate" type="date"/>
+              </div>
+              <div class="field full">
+                <label for="fNotes">Note (opzionale)</label>
+                <input id="fNotes" type="text" maxlength="120" placeholder="es. conguaglio, rata, vendita energia"/>
+              </div>
+              <div class="field full">
+                <label for="fFile">Allegato (opzionale)</label>
+                <label class="dropzone" for="fFile" tabindex="0">
+                  <strong>Seleziona PDF, JPG o PNG</strong>
+                  <small id="fFileLabel">Nessun file selezionato</small>
+                </label>
+                <input class="fileinput" id="fFile" type="file" accept=".pdf,.jpg,.jpeg,.png"/>
+              </div>
+              <div class="field full">
+                <button class="btn-primary" id="btnAdd" type="button">+ Aggiungi registrazione</button>
+                <div id="formFeedback"></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- KPI ROW -->
+      <section class="kpi-grid">
+        <article class="kpi-card">
+          <header><h3>Totale netto casa</h3><span class="pill">Net</span></header>
+          <div class="kpi-value" id="kpiNet">€ 0,00</div>
+          <div class="kpi-caption">Costi − Entrate GSE</div>
+        </article>
+        <article class="kpi-card">
+          <header><h3>Ultimi 30 giorni</h3><span class="pill">30g</span></header>
+          <div class="kpi-value" id="kpi30">€ 0,00</div>
+          <div class="kpi-caption" id="kpi30cap">Nessun movimento recente</div>
+        </article>
+        <article class="kpi-card">
+          <header><h3>Mese più costoso</h3><span class="pill">Peak</span></header>
+          <div class="kpi-value" id="kpiPeak">—</div>
+          <div class="kpi-caption" id="kpiPeakCap">Aggiungi dati</div>
+        </article>
+        <article class="kpi-card">
+          <header><h3>Registrazioni</h3><span class="pill">#</span></header>
+          <div class="kpi-value" id="kpiCount">0</div>
+          <div class="kpi-caption">Movimenti nella sessione</div>
+        </article>
+      </section>
+
+      <!-- HIGHLIGHTS: category cards + formula -->
+      <section id="highlights" class="panel panel-inner">
+        <div class="section-head">
+          <h3>Totale costi casa</h3>
+          <p>Riepilogo per categoria e saldo netto: Energia + Acqua + IMU − Entrate GSE.</p>
+        </div>
+        <div class="kpi-grid">
+          <article class="kpi-card">
+            <header><h3>Energia</h3><span class="pill">Costo</span></header>
+            <div class="kpi-value" id="catEnergy">€ 0,00</div>
+            <div class="kpi-caption">Totale bollette Energia</div>
+          </article>
+          <article class="kpi-card">
+            <header><h3>Acqua</h3><span class="pill">Costo</span></header>
+            <div class="kpi-value" id="catWater">€ 0,00</div>
+            <div class="kpi-caption">Totale bollette Acqua</div>
+          </article>
+          <article class="kpi-card">
+            <header><h3>IMU</h3><span class="pill">Costo</span></header>
+            <div class="kpi-value" id="catImu">€ 0,00</div>
+            <div class="kpi-caption">Totale imposte IMU</div>
+          </article>
+          <article class="kpi-card">
+            <header><h3>Entrate GSE</h3><span class="pill green">Profitto</span></header>
+            <div class="kpi-value" id="catGse">€ 0,00</div>
+            <div class="kpi-caption">Incassi energia venduta</div>
+          </article>
+        </div>
+        <div class="formula-card">
+          <span class="eyebrow">Saldo netto casa</span>
+          <div class="formula-value" id="formulaNet">€ 0,00</div>
+
+        </div>
+      </section>
+
+      <!-- REPORT: chart + summary -->
+      <div class="dash-grid" id="report">
+        <article class="panel panel-inner">
+          <div class="section-head">
+            <h3>Andamento mensile</h3>
+            <p>Saldo netto mese per mese al netto delle entrate GSE.</p>
+          </div>
+          <canvas id="chart" role="img" aria-label="Grafico andamento mensile"></canvas>
+        </article>
+      </div>
+
+      <!-- STORICO -->
+      <section class="panel panel-inner" id="storico">
+        <div class="section-head">
+          <h3>Storico movimenti</h3>
+          <p>Tutti i movimenti inseriti nella sessione corrente.</p>
+        </div>
+        <div id="tableWrap"></div>
+        <p class="footer-note">I dati sono in memoria: si perdono alla chiusura della scheda. Esporta in CSV per salvarli.</p>
+      </section>
+
+    </div><!-- /content -->
+  </main>
+</div><!-- /shell -->
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const RECORDS = [];
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const fmt = new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'});
+const fmtDate = new Intl.DateTimeFormat('it-IT');
+const MONTHS = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+const CAT_COLORS = {'Energia':'#01696f','Acqua':'#006494','IMU':'#964219','Entrate GSE':'#437a22'};
+
+function mkKey(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+function monthLabel(k){const[y,m]=k.split('-').map(Number);return `${MONTHS[m-1]} ${y}`}
+function nowKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`}
+function el(id){return document.getElementById(id)}
+function setText(id,v){const e=el(id);if(e)e.textContent=v}
+
+// ─── CHART SETUP ──────────────────────────────────────────────────────────────
+const chart = new Chart(el('chart'),{
+  type:'bar',
+  data:{labels:[],datasets:[{label:'Saldo netto',data:[],borderRadius:10,backgroundColor:[],hoverBackgroundColor:'#0c4e54'}]},
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{displayColors:false,backgroundColor:'rgba(20,20,20,.92)',padding:12,callbacks:{label:c=>fmt.format(c.raw||0)}}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#6f6b63'}},
+      y:{beginAtZero:true,ticks:{color:'#6f6b63',callback:v=>fmt.format(v)},grid:{color:'rgba(120,120,120,.14)'}}
+    }
+  }
+});
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render(){
+  const cats = {'Energia':0,'Acqua':0,'IMU':0,'Entrate GSE':0};
+  const monthly = {};
+  const now = new Date();
+  const d30 = new Date(now); d30.setDate(now.getDate()-30);
+  let recent=0;
+
+  for(const r of RECORDS){
+    cats[r.type] = (cats[r.type]||0) + r.amount;
+    const sign = r.type==='Entrate GSE' ? -r.amount : r.amount;
+    monthly[r.monthKey] = (monthly[r.monthKey]||0) + sign;
+    if(new Date(r.paymentDate) >= d30) recent += (r.type==='Entrate GSE'?-r.amount:r.amount);
+  }
+
+  const costTotal = cats['Energia'] + cats['Acqua'] + cats['IMU'];
+  const gse = cats['Entrate GSE'];
+  const net = costTotal - gse;
+  const months = Object.keys(monthly).sort();
+  const avgNet = months.length ? net/months.length : 0;
+  const curKey = nowKey();
+  const curNet = monthly[curKey] ?? 0;
+  const peakEntry = months.length ? months.reduce((a,b) => monthly[b]>monthly[a]?b:a) : null;
+  const topCatEntry = Object.entries(cats).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1])[0];
+  const grossTotal = RECORDS.reduce((s,r)=>s+r.amount,0);
+
+  // Sidebar year net
+  const cy = new Date().getFullYear();
+  const yearNet = RECORDS.filter(r=>Number(r.monthKey.slice(0,4))===cy).reduce((s,r)=>s+(r.type==='Entrate GSE'?-r.amount:r.amount),0);
+  setText('sbYearNet', fmt.format(yearNet));
+
+  // Hero metrics
+  setText('mCurrentTotal', fmt.format(curNet));
+  setText('mCurrentLabel', curNet ? `Saldo netto ${monthLabel(curKey)}` : 'Nessun dato per il mese corrente');
+  setText('mTopCat', topCatEntry ? topCatEntry[0] : '—');
+  setText('mTopCatVal', topCatEntry ? `${fmt.format(topCatEntry[1])} · ${grossTotal?(topCatEntry[1]/grossTotal*100).toFixed(1):0}%` : 'Aggiungi movimenti');
+  setText('mAvg', fmt.format(avgNet));
+
+  // KPIs
+  setText('kpiNet', fmt.format(net));
+  setText('kpi30', fmt.format(recent));
+  setText('kpi30cap', recent ? `Movimenti dal ${fmtDate.format(d30)}` : 'Nessun movimento recente');
+  setText('kpiPeak', peakEntry ? monthLabel(peakEntry) : '—');
+  setText('kpiPeakCap', peakEntry ? `${fmt.format(monthly[peakEntry])}` : 'Aggiungi dati');
+  setText('kpiCount', String(RECORDS.length));
+
+  // Category cards
+  setText('catEnergy', fmt.format(cats['Energia']));
+  setText('catWater', fmt.format(cats['Acqua']));
+  setText('catImu', fmt.format(cats['IMU']));
+  setText('catGse', fmt.format(gse));
+  setText('formulaNet', fmt.format(net));
+  
+
+  // Chart
+  chart.data.labels = months.map(monthLabel);
+  chart.data.datasets[0].data = months.map(k=>parseFloat(monthly[k].toFixed(2)));
+  chart.data.datasets[0].backgroundColor = months.map(k => monthly[k]<0 ? 'rgba(67,122,34,.75)' : 'rgba(1,105,111,.7)');
+  chart.update('none');
+
+
+
+  // Table
+  const tw = el('tableWrap');
+  if(!RECORDS.length){
+    tw.innerHTML='<div class="empty-state"><div><h3>Storico vuoto</h3><p>Ogni movimento che aggiungi apparirà qui.</p></div></div>';
+  } else {
+    const rows = RECORDS.slice().reverse().map((r,i)=>{
+      const realIdx=RECORDS.length-1-i;
+      const dc=CAT_COLORS[r.type]||'#888';
+      return `<tr>
+        <td><span class="badge" style="--bc:${dc}">${r.type}</span></td>
+        <td>${monthLabel(r.monthKey)}</td>
+        <td>${fmt.format(r.amount)}</td>
+        <td>${fmtDate.format(new Date(r.paymentDate))}</td>
+        <td>${r.notes||'—'}</td>
+        <td>${r.fileName?`<button class="btn-ghost" style="font-size:var(--tx);padding:.25rem .5rem;" onclick="openFile(${realIdx})">${r.fileName}</button>`:'—'}</td>
+        <td><button class="del-btn" onclick="deleteRecord(${realIdx})">✕</button></td>
+      </tr>`;
+    }).join('');
+    tw.innerHTML=`<div class="table-scroll"><table><thead><tr><th>Categoria</th><th>Mese</th><th>Importo</th><th>Data</th><th>Note</th><th>Allegato</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+}
+
+function openFile(idx){const r=RECORDS[idx];if(r&&r.fileUrl)window.open(r.fileUrl,'_blank','noopener')}
+function deleteRecord(idx){RECORDS.splice(idx,1);render()}
+
+// ─── ADD RECORD ──────────────────────────────────────────────────────────────
+function addRecord(){
+  const feedback = el('formFeedback');
+  const type   = el('fType').value.trim();
+  const month  = el('fMonth').value.trim();
+  const raw    = el('fAmount').value.trim().replace(',','.');
+  const amount = parseFloat(raw);
+  const date   = el('fDate').value.trim();
+  const notes  = el('fNotes').value.trim();
+  const file   = el('fFile').files[0] || null;
+
+  if(!type)   { setFeedback(feedback,'❌ Seleziona la categoria.','var(--er)'); return; }
+  if(!month)  { setFeedback(feedback,'❌ Inserisci il mese di competenza.','var(--er)'); return; }
+  if(!raw || isNaN(amount) || amount<=0){ setFeedback(feedback,'❌ Importo non valido. Usa il punto come separatore decimale (es. 124.50).','var(--er)'); return; }
+  if(!date)   { setFeedback(feedback,'❌ Inserisci la data di pagamento.','var(--er)'); return; }
+
+  RECORDS.push({id:mkKey(), type, monthKey:month, amount, paymentDate:date, notes, fileName:file?file.name:'', fileUrl:file?URL.createObjectURL(file):''});
+  RECORDS.sort((a,b)=>a.monthKey>b.monthKey?1:a.monthKey<b.monthKey?-1:0);
+
+  setFeedback(feedback,`✅ Aggiunto: ${type} ${fmt.format(amount)}`,'var(--su)');
+  el('fType').value='';
+  el('fAmount').value='';
+  el('fNotes').value='';
+  el('fFile').value='';
+  el('fFileLabel').textContent='Nessun file selezionato';
+  setDefaultDates();
+  render();
+}
+
+function setFeedback(el,msg,color){el.textContent=msg;el.style.color=color}
+function setDefaultDates(){
+  const t=new Date();
+  el('fDate').value=t.toISOString().split('T')[0];
+  el('fMonth').value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}`;
+}
+
+// ─── DEMO DATA ────────────────────────────────────────────────────────────────
+function loadDemo(){
+  if(RECORDS.length&&!confirm('Aggiungere i dati demo alle registrazioni esistenti?'))return;
+  [
+    {type:'Energia',monthKey:'2026-01',amount:132.4,paymentDate:'2026-01-18',notes:'Consumo inverno'},
+    {type:'Acqua',monthKey:'2026-01',amount:48.2,paymentDate:'2026-01-23',notes:'Acconto bimestre'},
+    {type:'IMU',monthKey:'2026-02',amount:420,paymentDate:'2026-02-16',notes:'Prima rata'},
+    {type:'Energia',monthKey:'2026-02',amount:118.6,paymentDate:'2026-02-20',notes:'Consumo ordinario'},
+    {type:'Acqua',monthKey:'2026-03',amount:52.1,paymentDate:'2026-03-12',notes:'Saldo bimestre'},
+    {type:'Energia',monthKey:'2026-03',amount:141.9,paymentDate:'2026-03-21',notes:'Picco riscaldamento'},
+    {type:'Entrate GSE',monthKey:'2026-03',amount:86.5,paymentDate:'2026-03-28',notes:'Vendita energia'},
+    {type:'Energia',monthKey:'2026-04',amount:97.5,paymentDate:'2026-04-19',notes:'Mese primaverile'},
+    {type:'Acqua',monthKey:'2026-04',amount:45.9,paymentDate:'2026-04-24',notes:'Consumo regolare'},
+    {type:'IMU',monthKey:'2026-05',amount:420,paymentDate:'2026-05-10',notes:'Seconda rata'},
+    {type:'Entrate GSE',monthKey:'2026-05',amount:92.3,paymentDate:'2026-05-12',notes:'Saldo GSE mensile'},
+  ].forEach(d=>RECORDS.push({id:mkKey(),...d,fileName:'',fileUrl:''}));
+  RECORDS.sort((a,b)=>a.monthKey>b.monthKey?1:a.monthKey<b.monthKey?-1:0);
+  render();
+}
+
+// ─── EXPORT CSV ──────────────────────────────────────────────────────────────
+function exportCsv(){
+  if(!RECORDS.length){alert('Nessun dato da esportare.');return;}
+  const rows=[['Categoria','Mese','Importo','Data','Note','Allegato'],...RECORDS.map(r=>[r.type,r.monthKey,r.amount.toFixed(2),r.paymentDate,(r.notes||'').replace(/;/g,','),r.fileName||''])];
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download='costi-casa.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ─── THEME ────────────────────────────────────────────────────────────────────
+let darkMode = window.matchMedia('(prefers-color-scheme:dark)').matches;
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
+  const tc='var(--txm)';
+  chart.options.scales.x.ticks.color=darkMode?'#9a9895':'#6f6b63';
+  chart.options.scales.y.ticks.color=darkMode?'#9a9895':'#6f6b63';
+  chart.update('none');
+}
+applyTheme();
+el('btnTheme').onclick=()=>{darkMode=!darkMode;applyTheme()};
+
+// ─── FILE INPUT ───────────────────────────────────────────────────────────────
+el('fFile').onchange=()=>{el('fFileLabel').textContent=el('fFile').files[0]?el('fFile').files[0].name:'Nessun file selezionato'};
+
+// ─── EVENTS ───────────────────────────────────────────────────────────────────
+el('btnAdd').onclick = addRecord;
+el('btnDemo').onclick = loadDemo;
+el('btnExport').onclick = exportCsv;
+el('mobToggle').onclick = ()=>el('sidebar').classList.toggle('open');
+document.querySelectorAll('.nav-link').forEach(a=>a.onclick=()=>{
+  document.querySelectorAll('.nav-link').forEach(x=>x.classList.remove('active'));
+  a.classList.add('active');
+  el('sidebar').classList.remove('open');
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+setDefaultDates();
+render();
+</script>
+</body>
+</html>
